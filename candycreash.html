@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Crush</title>
+    <style>
+        body {
+            background: url("background.jpg") no-repeat center center fixed;
+            background-size: cover;
+            font-family: sans-serif;
+            color: white;
+            text-align: center;
+        }
+
+        #board {
+            width: 450px;
+            height: 450px;
+            background-color: lightblue;
+            border: 5px solid slateblue;
+            border-radius: 10px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #board img {
+            width: 50px;
+            height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Score: <span id="score">0</span></h1>
+    <div id="board"></div>
+</body>
+<script>
+    const candies = ["Blue", "Orange", "Green", "Yellow", "Red", "Purple"];
+    const board = [];
+    const rows = 9;
+    const columns = 9;
+    let score = 0;
+
+    let currTile;
+    let otherTile;
+
+    window.onload = function() {
+        startGame();
+        setInterval(function() {
+            crushCandy();
+            slideCandy();
+            generateCandy();
+        }, 100);
+    };
+
+    function randomCandy() {
+        return candies[Math.floor(Math.random() * candies.length)];
+    }
+
+    function startGame() {
+        for (let r = 0; r < rows; r++) {
+            let row = [];
+            for (let c = 0; c < columns; c++) {
+                let tile = document.createElement("img");
+                tile.id = r.toString() + "-" + c.toString();
+                tile.src = "./images/" + randomCandy() + ".png";
+
+                // Drag functions
+                tile.addEventListener("dragstart", dragStart);
+                tile.addEventListener("dragover", dragOver);
+                tile.addEventListener("dragenter", dragEnter);
+                tile.addEventListener("dragleave", dragLeave);
+                tile.addEventListener("drop", dragDrop);
+                tile.addEventListener("dragend", dragEnd);
+
+                document.getElementById("board").append(tile);
+                row.push(tile);
+            }
+            board.push(row);
+        }
+    }
+
+    function dragStart() {
+        currTile = this;
+    }
+
+    function dragOver(e) {
+        e.preventDefault();
+    }
+
+    function dragEnter(e) {
+        e.preventDefault();
+    }
+
+    function dragLeave() {}
+
+    function dragDrop() {
+        otherTile = this;
+    }
+
+    function dragEnd() {
+        if (currTile.src.includes("blank") || otherTile.src.includes("blank")) return;
+
+        const [currRow, currCol] = currTile.id.split("-").map(Number);
+        const [otherRow, otherCol] = otherTile.id.split("-").map(Number);
+
+        const isAdjacent = Math.abs(currRow - otherRow) + Math.abs(currCol - otherCol) === 1;
+
+        if (isAdjacent) {
+            swapTiles(currTile, otherTile);
+            if (!isValidMove()) {
+                swapTiles(currTile, otherTile); // revert if invalid move
+            }
+        }
+    }
+
+    function swapTiles(tile1, tile2) {
+        const tempSrc = tile1.src;
+        tile1.src = tile2.src;
+        tile2.src = tempSrc;
+    }
+
+    function isValidMove() {
+        return checkMatch();
+    }
+
+    function checkMatch() {
+        let matched = false;
+
+        // Check for horizontal and vertical matches
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < columns; c++) {
+                let candy = board[r][c].src;
+                if (c <= columns - 3 && candy === board[r][c + 1].src && candy === board[r][c + 2].src && !candy.includes("blank")) {
+                    matched = true;
+                    board[r][c].src = board[r][c + 1].src = board[r][c + 2].src = "./images/blank.png";
+                    score += 30;
+                }
+                if (r <= rows - 3 && candy === board[r + 1][c].src && candy === board[r + 2][c].src && !candy.includes("blank")) {
+                    matched = true;
+                    board[r][c].src = board[r + 1][c].src = board[r + 2][c].src = "./images/blank.png";
+                    score += 30;
+                }
+            }
+        }
+
+        document.getElementById("score").innerText = score;
+        return matched;
+    }
+
+    function crushCandy() {
+        if (checkMatch()) {
+            slideCandy();
+            generateCandy();
+        }
+    }
+
+    function slideCandy() {
+        for (let c = 0; c < columns; c++) {
+            let blankRow = rows - 1;
+            for (let r = rows - 1; r >= 0; r--) {
+                if (!board[r][c].src.includes("blank")) {
+                    if (r !== blankRow) {
+                        board[blankRow][c].src = board[r][c].src;
+                        board[r][c].src = "./images/blank.png";
+                    }
+                    blankRow--;
+                }
+            }
+        }
+    }
+
+    function generateCandy() {
+        for (let c = 0; c < columns; c++) {
+            for (let r = 0; r < rows; r++) {
+                if (board[r][c].src.includes("blank")) {
+                    board[r][c].src = "./images/" + randomCandy() + ".png";
+                }
+            }
+        }
+    }
+</script>
+</html>
